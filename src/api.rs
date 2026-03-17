@@ -14,7 +14,7 @@ pub fn fetch_menu(date_str: &str) -> Result<String, Box<dyn std::error::Error>> 
     let body: serde_json::Value = resp.into_json()?;
     body["content"]
         .as_str()
-        .map(|s| s.to_string())
+        .map(std::string::ToString::to_string)
         .ok_or_else(|| "missing 'content' field in API response".into())
 }
 
@@ -26,13 +26,12 @@ fn cache_dir() -> std::path::PathBuf {
             std::path::PathBuf::from(home).join(".cache")
         });
 
-    dbg!(base.join("mensa"));
     base.join("mensa")
 }
 
 pub fn cached_fetch(date_str: &str) -> Result<String, Box<dyn std::error::Error>> {
     let dir = cache_dir();
-    let path = dir.join(format!("{}.html", date_str));
+    let path = dir.join(format!("{date_str}.html"));
 
     if let Ok(html) = std::fs::read_to_string(&path) {
         return Ok(html);

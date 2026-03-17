@@ -28,7 +28,7 @@ pub fn tokenize_ingredients(raw: &str) -> Vec<IngredientToken> {
             let codes_str = cap.get(2).map_or("", |m| m.as_str());
             let codes: Vec<&str> = codes_str
                 .split(',')
-                .map(|s| s.trim())
+                .map(str::trim)
                 .filter(|s| !s.is_empty())
                 .collect();
             if !text.is_empty() {

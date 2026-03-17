@@ -21,7 +21,7 @@ pub fn wrap_line(prefix: &str, text: &str, width: usize) -> String {
     let indent = " ".repeat(visible_len(prefix));
     let avail = width.saturating_sub(visible_len(prefix));
     if avail < 20 {
-        return format!("{}{}", prefix, text);
+        return format!("{prefix}{text}");
     }
 
     let words: Vec<&str> = text.split(' ').collect();
@@ -36,7 +36,7 @@ pub fn wrap_line(prefix: &str, text: &str, width: usize) -> String {
             current_vis = wlen;
         } else if current_vis + 1 + wlen > avail {
             lines.push(current);
-            current = word.to_string();
+            current = (*word).to_string();
             current_vis = wlen;
         } else {
             current.push(' ');

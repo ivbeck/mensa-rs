@@ -27,10 +27,11 @@ impl Meal {
     }
 
     pub fn price_info(&self) -> String {
-        if self.unit != "Portion" {
-            format!("{}/{}", self.price, self.unit)
-        } else {
+        if self.unit == "Portion" {
             self.price.clone()
+        } else {
+            let unit = self.unit.replace("pro", "");
+            format!("{}/{}", self.price, unit.trim())
         }
     }
 }

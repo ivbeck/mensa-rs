@@ -29,8 +29,7 @@ fn render_output(meals: &[Meal], today: &chrono::NaiveDate) -> String {
 
     let mut lines = Vec::new();
     lines.push(style_header(&format!(
-        "\u{1F37D}  Mensa am Schloss \u{2014} {}",
-        weekday
+        "\u{1F37D}  Mensa am Schloss \u{2014} {weekday}"
     )));
 
     let width = terminal_width();
@@ -63,7 +62,7 @@ fn main() {
         Err(e) => {
             eprintln!(
                 "{}",
-                style_dim(&format!("Mensa: could not fetch menu ({})", e))
+                style_dim(&format!("Mensa: could not fetch menu ({e})"))
             );
             process::exit(1);
         }
