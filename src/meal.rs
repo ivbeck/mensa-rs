@@ -22,6 +22,7 @@ pub struct Meal {
 }
 
 impl Meal {
+    #[must_use]
     pub fn render_items(&self) -> String {
         self.ingredients
             .iter()
@@ -36,6 +37,7 @@ impl Meal {
             .join(", ")
     }
 
+    #[must_use]
     pub fn price_info(&self) -> String {
         if self.unit == "Portion" {
             self.price.clone()
@@ -46,6 +48,9 @@ impl Meal {
     }
 }
 
+/// # Errors
+/// Returns an error if the HTML parsing regex cannot be compiled or ingredient
+/// tokenization fails.
 pub fn parse_menu(html: &str) -> Result<Vec<Meal>, MealError> {
     let re = Regex::new(
         r#"(?s)<tr[^>]*>.*?<td class="speiseplan-table-menu-headline">\s*<strong>\s*(.*?)\s*</strong>.*?<td class="speiseplan-table-menu-content">\s*(.*?)\s*</td>.*?<i class="price">(.*?)</i>.*?<i class="customSelection">(.*?)</i>"#,

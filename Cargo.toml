@@ -11,6 +11,15 @@ regex = "1"
 chrono = "0.4"
 html-escape = "0.2"
 thiserror = "2.0.18"
+eframe = { version = "0.29", optional = true }
+
+[features]
+gui = ["eframe"]
+
+[[bin]]
+name = "mensa-gui"
+path = "src/bin/mensa_gui.rs"
+required-features = ["gui"]
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

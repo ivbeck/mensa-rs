@@ -14,6 +14,8 @@ pub enum ApiError {
     MissingContent,
 }
 
+/// # Errors
+/// Returns an error if the HTTP request fails or the API response is malformed.
 pub fn fetch_menu(date_str: &str, lang: &str) -> Result<String, ApiError> {
     let resp = ureq::post(API_URL)
         .send_form(&[
@@ -44,6 +46,8 @@ fn cache_dir() -> std::path::PathBuf {
     base.join("mensa")
 }
 
+/// # Errors
+/// Returns an error if the HTTP request fails or the response cannot be parsed.
 pub fn cached_fetch(
     date_str: &str,
     lang: &str,

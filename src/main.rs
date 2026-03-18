@@ -1,16 +1,10 @@
-use chrono::Datelike;
+use chrono::Datelike as _;
 use std::process;
 
-mod api;
-mod display;
-mod ingredients;
-mod meal;
-mod style;
-
-use api::cached_fetch;
-use display::{terminal_width, wrap_line};
-use meal::{parse_menu, Meal};
-use style::{style_category, style_dim, style_header};
+use mensa::api::cached_fetch;
+use mensa::display::{terminal_width, wrap_line};
+use mensa::meal::{parse_menu, Meal};
+use mensa::style::{style_category, style_dim, style_header};
 
 const COLUMN_WIDTH: usize = 16;
 

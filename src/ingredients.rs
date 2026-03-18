@@ -11,10 +11,13 @@ pub struct IngredientToken {
     pub has_milk: bool,
 }
 
+#[must_use]
 pub fn contains_milk(codes: &[&str]) -> bool {
     codes.contains(&"Mi")
 }
 
+/// # Errors
+/// Returns an error if the whitespace-normalizing regex cannot be compiled.
 pub fn normalize_whitespace(s: &str) -> Result<String, IngredientError> {
     let re = Regex::new(r"\s+")?;
     Ok(re
@@ -25,6 +28,8 @@ pub fn normalize_whitespace(s: &str) -> Result<String, IngredientError> {
         .to_string())
 }
 
+/// # Errors
+/// Returns an error if any ingredient-parsing regex cannot be compiled.
 pub fn tokenize_ingredients(raw: &str) -> Result<Vec<IngredientToken>, IngredientError> {
     let re = Regex::new(r"(.*?)\s*\(([^)]*)\)|(.+?)$")?;
     let mut tokens = Vec::new();

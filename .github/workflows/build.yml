@@ -18,8 +18,10 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact: mensa
+            gui_artifact: mensa-gui
           - os: windows-latest
             artifact: mensa.exe
+            gui_artifact: mensa-gui.exe
 
     steps:
       - uses: actions/checkout@v4
@@ -42,8 +44,17 @@ jobs:
       - name: Build (release)
         run: cargo build --release
 
-      - name: Upload artifact
+      - name: Build GUI (release)
+        run: cargo build --release --features gui --bin mensa-gui
+
+      - name: Upload CLI artifact
         uses: actions/upload-artifact@v4
         with:
           name: mensa-${{ runner.os }}
           path: target/release/${{ matrix.artifact }}
+
+      - name: Upload GUI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mensa-gui-${{ runner.os }}
+          path: target/release/${{ matrix.gui_artifact }}

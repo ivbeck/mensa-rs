@@ -8,12 +8,15 @@ pub enum DisplayError {
     Regex(#[from] regex::Error),
 }
 
+/// # Errors
+/// Returns an error if the ANSI-stripping regex cannot be compiled.
 pub fn visible_len(s: &str) -> Result<usize, DisplayError> {
     let re = Regex::new(r"\x1b\[[0-9;]*m")
         .map_err(|e| DisplayError::VisibleLength(e.to_string()))?;
     Ok(re.replace_all(s, "").chars().count())
 }
 
+#[must_use]
 pub fn terminal_width() -> usize {
     #[cfg(unix)]
     {
@@ -28,6 +31,8 @@ pub fn terminal_width() -> usize {
     80
 }
 
+/// # Errors
+/// Returns an error if visible-length calculation fails.
 pub fn wrap_line(prefix: &str, text: &str, width: usize) -> Result<String, DisplayError> {
     let indent = " ".repeat(visible_len(prefix)?);
     let avail = width.saturating_sub(visible_len(prefix)?);
@@ -68,6 +73,8 @@ pub fn wrap_line(prefix: &str, text: &str, width: usize) -> Result<String, Displ
     Ok(result)
 }
 
+/// # Errors
+/// Returns an error if the tag-stripping regex cannot be compiled.
 pub fn strip_tags(html: &str) -> Result<String, DisplayError> {
     let re = Regex::new(r"<[^>]+>")?;
     let text = re.replace_all(html, "");
