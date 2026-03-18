@@ -14,21 +14,61 @@ use style::{style_category, style_dim, style_header};
 
 const COLUMN_WIDTH: usize = 16;
 
+struct Args {
+    lang: String,
+    no_cache: bool,
+}
+
+fn parse_args() -> Args {
+    let mut lang = "de".to_owned();
+    let mut no_cache = false;
+    let mut iter = std::env::args().skip(1);
+    while let Some(arg) = iter.next() {
+        match arg.as_str() {
+            "--lang" => {
+                if let Some(l) = iter.next() {
+                    match l.as_str() {
+                        "de" | "en" => lang = l,
+                        other => eprintln!("Unknown lang '{other}', using 'de'"),
+                    }
+                }
+            }
+            "--no-cache" => no_cache = true,
+            other => eprintln!("Unknown argument '{other}'"),
+        }
+    }
+    Args { lang, no_cache }
+}
+
 fn render_output(
     meals: &[Meal],
     today: chrono::NaiveDate,
+    lang: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    let days_de = [
-        "Montag",
-        "Dienstag",
-        "Mittwoch",
-        "Donnerstag",
-        "Freitag",
-        "Samstag",
-        "Sonntag",
-    ];
     let weekday_idx = today.weekday().num_days_from_monday() as usize;
-    let weekday = format!("{} {}", days_de[weekday_idx], today.format("%d.%m."));
+    let weekday = if lang == "en" {
+        let days_en = [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday",
+        ];
+        format!("{} {}", days_en[weekday_idx], today.format("%m/%d"))
+    } else {
+        let days_de = [
+            "Montag",
+            "Dienstag",
+            "Mittwoch",
+            "Donnerstag",
+            "Freitag",
+            "Samstag",
+            "Sonntag",
+        ];
+        format!("{} {}", days_de[weekday_idx], today.format("%d.%m."))
+    };
 
     let mut lines = Vec::new();
     lines.push(style_header(&format!(
@@ -57,10 +97,11 @@ fn render_output(
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = parse_args();
     let today = chrono::Local::now().date_naive();
     let date_str = today.format("%Y-%m-%d").to_string();
 
-    let html = match cached_fetch(&date_str) {
+    let html = match cached_fetch(&date_str, &args.lang, args.no_cache) {
         Ok(h) => h,
         Err(e) => {
             eprintln!(
@@ -77,7 +118,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    println!("{}", render_output(&meals, today)?);
+    println!("{}", render_output(&meals, today, &args.lang)?);
 
     Ok(())
 }

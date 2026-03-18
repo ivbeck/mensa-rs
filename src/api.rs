@@ -14,12 +14,12 @@ pub enum ApiError {
     MissingContent,
 }
 
-pub fn fetch_menu(date_str: &str) -> Result<String, ApiError> {
+pub fn fetch_menu(date_str: &str, lang: &str) -> Result<String, ApiError> {
     let resp = ureq::post(API_URL)
         .send_form(&[
             ("id", MENU_ID),
             ("location", LOCATION),
-            ("lang", "de"),
+            ("lang", lang),
             ("date", date_str),
             ("mode", "day"),
         ])
@@ -44,15 +44,21 @@ fn cache_dir() -> std::path::PathBuf {
     base.join("mensa")
 }
 
-pub fn cached_fetch(date_str: &str) -> Result<String, Box<dyn std::error::Error>> {
+pub fn cached_fetch(
+    date_str: &str,
+    lang: &str,
+    no_cache: bool,
+) -> Result<String, Box<dyn std::error::Error>> {
     let dir = cache_dir();
-    let path = dir.join(format!("{date_str}.html"));
+    let path = dir.join(format!("{date_str}_{lang}.html"));
 
-    if let Ok(html) = std::fs::read_to_string(&path) {
-        return Ok(html);
+    if !no_cache {
+        if let Ok(html) = std::fs::read_to_string(&path) {
+            return Ok(html);
+        }
     }
 
-    let html = fetch_menu(date_str)?;
+    let html = fetch_menu(date_str, lang)?;
     let _ = std::fs::create_dir_all(&dir);
     let _ = std::fs::write(&path, &html);
     Ok(html)
