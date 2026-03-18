@@ -11,6 +11,7 @@ regex = "1"
 chrono = "0.4"
 html-escape = "0.2"
 libc = "0.2"
+thiserror = "2.0.18"
 
 
 [lints.clippy]
@@ -23,7 +24,5 @@ nursery = { level = "deny", priority = -1 }
 future_not_send = "allow"
 unwrap_used = "deny"
 missing_const_for_fn = "deny"
-print_stdout = "deny"
-print_stderr = "deny"
 enum_glob_use = "deny"
 match-wild-err-arm = "warn"

@@ -1,8 +1,18 @@
 use regex::Regex;
 
-use crate::display::strip_tags;
+use crate::display::{strip_tags, DisplayError};
 use crate::ingredients::{tokenize_ingredients, IngredientToken};
 use crate::style::style_danger;
+
+#[derive(Debug, thiserror::Error)]
+pub enum MealError {
+    #[error("Failed to parse meal data: {0}")]
+    Parse(#[from] regex::Error),
+    #[error("Failed to parse ingredients: {0}")]
+    Ingredient(#[from] crate::ingredients::IngredientError),
+    #[error("Failed to display meal: {0}")]
+    Display(#[from] DisplayError),
+}
 
 pub struct Meal {
     pub name: String,
@@ -36,26 +46,25 @@ impl Meal {
     }
 }
 
-pub fn parse_menu(html: &str) -> Vec<Meal> {
+pub fn parse_menu(html: &str) -> Result<Vec<Meal>, MealError> {
     let re = Regex::new(
         r#"(?s)<tr[^>]*>.*?<td class="speiseplan-table-menu-headline">\s*<strong>\s*(.*?)\s*</strong>.*?<td class="speiseplan-table-menu-content">\s*(.*?)\s*</td>.*?<i class="price">(.*?)</i>.*?<i class="customSelection">(.*?)</i>"#,
-    )
-    .unwrap();
+    )?;
 
     re.captures_iter(html)
         .map(|cap| {
-            let name = strip_tags(&cap[1]);
-            let raw_items = strip_tags(&cap[2]);
-            let price = strip_tags(&cap[3]);
-            let unit = strip_tags(&cap[4]);
-            let ingredients = tokenize_ingredients(&raw_items);
+            let name = strip_tags(&cap[1])?;
+            let raw_items = strip_tags(&cap[2])?;
+            let price = strip_tags(&cap[3])?;
+            let unit = strip_tags(&cap[4])?;
+            let ingredients = tokenize_ingredients(&raw_items)?;
 
-            Meal {
+            Ok(Meal {
                 name,
                 ingredients,
                 price,
                 unit,
-            }
+            })
         })
         .collect()
 }

@@ -9,12 +9,15 @@ mod style;
 
 use api::cached_fetch;
 use display::{terminal_width, wrap_line};
-use style::{style_category, style_dim, style_header};
 use meal::{parse_menu, Meal};
+use style::{style_category, style_dim, style_header};
 
 const COLUMN_WIDTH: usize = 16;
 
-fn render_output(meals: &[Meal], today: &chrono::NaiveDate) -> String {
+fn render_output(
+    meals: &[Meal],
+    today: chrono::NaiveDate,
+) -> Result<String, Box<dyn std::error::Error>> {
     let days_de = [
         "Montag",
         "Dienstag",
@@ -44,16 +47,16 @@ fn render_output(meals: &[Meal], today: &chrono::NaiveDate) -> String {
         let name_col = format!("{}{}", meal.name, dots);
         let items = meal.render_items();
         let prefix = format!("  {} ", style_category(&name_col));
-        lines.push(wrap_line(&prefix, &items, width));
+        lines.push(wrap_line(&prefix, &items, width)?);
 
         let price = style_dim(&meal.price_info());
         lines.push(format!("  {} {}", " ".repeat(COLUMN_WIDTH), price));
     }
 
-    lines.join("\n")
+    Ok(lines.join("\n"))
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let today = chrono::Local::now().date_naive();
     let date_str = today.format("%Y-%m-%d").to_string();
 
@@ -68,11 +71,13 @@ fn main() {
         }
     };
 
-    let meals = parse_menu(&html);
+    let meals = parse_menu(&html)?;
     if meals.is_empty() {
         println!("{}", style_dim("Mensa am Schloss: no meals today"));
-        return;
+        return Ok(());
     }
 
-    println!("{}", render_output(&meals, &today));
+    println!("{}", render_output(&meals, today)?);
+
+    Ok(())
 }

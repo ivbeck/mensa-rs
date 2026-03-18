@@ -1,8 +1,17 @@
 use regex::Regex;
 
-pub fn visible_len(s: &str) -> usize {
-    let re = Regex::new(r"\x1b\[[0-9;]*m").unwrap();
-    re.replace_all(s, "").chars().count()
+#[derive(Debug, thiserror::Error)]
+pub enum DisplayError {
+    #[error("Failed to parse visible length: {0}")]
+    VisibleLength(String),
+    #[error("Regex error: {0}")]
+    Regex(#[from] regex::Error),
+}
+
+pub fn visible_len(s: &str) -> Result<usize, DisplayError> {
+    let re = Regex::new(r"\x1b\[[0-9;]*m")
+        .map_err(|e| DisplayError::VisibleLength(e.to_string()))?;
+    Ok(re.replace_all(s, "").chars().count())
 }
 
 pub fn terminal_width() -> usize {
@@ -17,11 +26,11 @@ pub fn terminal_width() -> usize {
     }
 }
 
-pub fn wrap_line(prefix: &str, text: &str, width: usize) -> String {
-    let indent = " ".repeat(visible_len(prefix));
-    let avail = width.saturating_sub(visible_len(prefix));
+pub fn wrap_line(prefix: &str, text: &str, width: usize) -> Result<String, DisplayError> {
+    let indent = " ".repeat(visible_len(prefix)?);
+    let avail = width.saturating_sub(visible_len(prefix)?);
     if avail < 20 {
-        return format!("{prefix}{text}");
+        return Ok(format!("{prefix}{text}"));
     }
 
     let words: Vec<&str> = text.split(' ').collect();
@@ -30,7 +39,7 @@ pub fn wrap_line(prefix: &str, text: &str, width: usize) -> String {
     let mut current_vis = 0usize;
 
     for word in &words {
-        let wlen = visible_len(word);
+        let wlen = visible_len(word)?;
         if current.is_empty() {
             current.push_str(word);
             current_vis = wlen;
@@ -54,11 +63,11 @@ pub fn wrap_line(prefix: &str, text: &str, width: usize) -> String {
         result.push_str(&indent);
         result.push_str(line);
     }
-    result
+    Ok(result)
 }
 
-pub fn strip_tags(html: &str) -> String {
-    let re = Regex::new(r"<[^>]+>").unwrap();
+pub fn strip_tags(html: &str) -> Result<String, DisplayError> {
+    let re = Regex::new(r"<[^>]+>")?;
     let text = re.replace_all(html, "");
-    html_escape::decode_html_entities(&text).trim().to_string()
+    Ok(html_escape::decode_html_entities(&text).trim().to_string())
 }
