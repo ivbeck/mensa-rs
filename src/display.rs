@@ -15,15 +15,17 @@ pub fn visible_len(s: &str) -> Result<usize, DisplayError> {
 }
 
 pub fn terminal_width() -> usize {
-    use std::mem::zeroed;
-    unsafe {
-        let mut ws: libc::winsize = zeroed();
-        if libc::ioctl(1, libc::TIOCGWINSZ, &mut ws) == 0 && ws.ws_col > 0 {
-            ws.ws_col as usize
-        } else {
-            80
+    #[cfg(unix)]
+    {
+        use std::mem::zeroed;
+        unsafe {
+            let mut ws: libc::winsize = zeroed();
+            if libc::ioctl(1, libc::TIOCGWINSZ, &mut ws) == 0 && ws.ws_col > 0 {
+                return ws.ws_col as usize;
+            }
         }
     }
+    80
 }
 
 pub fn wrap_line(prefix: &str, text: &str, width: usize) -> Result<String, DisplayError> {
