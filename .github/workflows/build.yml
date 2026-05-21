@@ -81,7 +81,7 @@ jobs:
       - name: Download tarballs
         uses: actions/download-artifact@v4
         with:
-          pattern: *.tar.gz
+          pattern: "*.tar.gz"
           path: dist
           merge-multiple: true
 
