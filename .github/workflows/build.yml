@@ -18,10 +18,12 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact: mensa
-            gui_artifact: mensa-gui
+            target: x86_64-unknown-linux-gnu
+            tarball: mensa-linux-x86_64.tar.gz
           - os: windows-latest
             artifact: mensa.exe
-            gui_artifact: mensa-gui.exe
+            target: x86_64-pc-windows-msvc
+            tarball: mensa-windows-x86_64.tar.gz
 
     steps:
       - uses: actions/checkout@v4
@@ -47,14 +49,47 @@ jobs:
       - name: Build GUI (release)
         run: cargo build --release --features gui --bin mensa-gui
 
+      - name: Package CLI
+        run: tar czf ${{ matrix.tarball }} -C target/release ${{ matrix.artifact }}
+
       - name: Upload CLI artifact
         uses: actions/upload-artifact@v4
         with:
           name: mensa-${{ runner.os }}
           path: target/release/${{ matrix.artifact }}
 
-      - name: Upload GUI artifact
+      - name: Upload tarball
         uses: actions/upload-artifact@v4
         with:
-          name: mensa-gui-${{ runner.os }}
-          path: target/release/${{ matrix.gui_artifact }}
+          name: ${{ matrix.tarball }}
+          path: target/release/${{ matrix.tarball }}
+
+  release:
+    name: Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Download CLI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: mensa-*
+          path: dist
+          merge-multiple: true
+
+      - name: Download tarballs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: *.tar.gz
+          path: dist
+          merge-multiple: true
+
+      - name: List files
+        run: ls -la dist/
+
+      - name: Create or update release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true

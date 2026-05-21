@@ -14,6 +14,14 @@ Meals containing milk (`Mi`) are highlighted in red.
 
 ## Installation
 
+### Pre-built binary (recommended)
+
+```bash
+curl -sSL https://raw.githubusercontent.com/ivbeck/mensa-rs/main/install.sh | bash
+```
+
+### Build from source
+
 ```bash
 cargo install --path .
 ```
