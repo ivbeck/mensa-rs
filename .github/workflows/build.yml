@@ -3,27 +3,41 @@ name: Build
 on:
   push:
     branches: ["master"]
+    tags: ["v*"]
   pull_request:
     branches: ["master"]
+
+permissions:
+  contents: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
-    name: Build (${{ matrix.os }})
+    name: Build (${{ matrix.target }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact: mensa
             target: x86_64-unknown-linux-gnu
-            tarball: mensa-linux-x86_64.tar.gz
+            package: mensa-x86_64-unknown-linux-gnu
+            archive: mensa-x86_64-unknown-linux-gnu.tar.gz
+            cli: mensa
+            gui: mensa-gui
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+            package: mensa-x86_64-apple-darwin
+            archive: mensa-x86_64-apple-darwin.tar.gz
+            cli: mensa
+            gui: mensa-gui
           - os: windows-latest
-            artifact: mensa.exe
             target: x86_64-pc-windows-msvc
-            tarball: mensa-windows-x86_64.tar.gz
+            package: mensa-x86_64-pc-windows-msvc
+            archive: mensa-x86_64-pc-windows-msvc.zip
+            cli: mensa.exe
+            gui: mensa-gui.exe
 
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +46,21 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux GUI dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libx11-dev \
+            libxi-dev \
+            libgl1-mesa-dev \
+            libxcb-render0-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libxkbcommon-dev \
+            libwayland-dev
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -40,48 +69,65 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-${{ matrix.target }}-cargo-
 
-      - name: Build (release)
-        run: cargo build --release
+      - name: Build CLI and GUI (release)
+        run: cargo build --release --features gui --bins --target ${{ matrix.target }}
 
-      - name: Build GUI (release)
-        run: cargo build --release --features gui --bin mensa-gui
+      - name: Package Unix binaries
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_dir="dist/${{ matrix.package }}"
+          mkdir -p "${package_dir}"
+          cp "target/${{ matrix.target }}/release/${{ matrix.cli }}" "${package_dir}/"
+          cp "target/${{ matrix.target }}/release/${{ matrix.gui }}" "${package_dir}/"
+          tar -czf "dist/${{ matrix.archive }}" -C "${package_dir}" .
 
-      - name: Package CLI
-        run: tar czf ${{ matrix.tarball }} -C target/release ${{ matrix.artifact }}
+      - name: Package Windows binaries
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $packageDir = "dist/${{ matrix.package }}"
+          New-Item -ItemType Directory -Force -Path $packageDir | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/${{ matrix.cli }}" "$packageDir/"
+          Copy-Item "target/${{ matrix.target }}/release/${{ matrix.gui }}" "$packageDir/"
+          Compress-Archive -Path "$packageDir/*" -DestinationPath "dist/${{ matrix.archive }}" -Force
 
-      - name: Upload CLI artifact
+      - name: Upload release archive
         uses: actions/upload-artifact@v4
         with:
-          name: mensa-${{ runner.os }}
-          path: target/release/${{ matrix.artifact }}
-
-      - name: Upload tarball
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.tarball }}
-          path: target/release/${{ matrix.tarball }}
+          name: ${{ matrix.archive }}
+          path: dist/${{ matrix.archive }}
 
   release:
     name: Release
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
 
     steps:
-      - name: Download CLI artifacts
+      - uses: actions/checkout@v4
+
+      - name: Resolve release tag
+        id: release-tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            tag_name="${GITHUB_REF_NAME}"
+          else
+            version="$(python3 -c 'import pathlib, tomllib; print(tomllib.loads(pathlib.Path("Cargo.toml").read_text())["package"]["version"])')"
+            tag_name="v${version}"
+          fi
+          echo "tag_name=${tag_name}" >> "${GITHUB_OUTPUT}"
+
+      - name: Download release archives
         uses: actions/download-artifact@v4
         with:
           pattern: mensa-*
-          path: dist
-          merge-multiple: true
-
-      - name: Download tarballs
-        uses: actions/download-artifact@v4
-        with:
-          pattern: "*.tar.gz"
           path: dist
           merge-multiple: true
 
@@ -91,5 +137,7 @@ jobs:
       - name: Create or update release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.release-tag.outputs.tag_name }}
+          target_commitish: ${{ github.sha }}
           files: dist/*
           generate_release_notes: true
