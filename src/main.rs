@@ -101,19 +101,19 @@ fn add_csv(values: &mut Vec<String>, raw: &str) {
 fn print_help() {
     println!(
         "Usage: mensa [OPTIONS]\n\n\
-         Options:\n\
-           --lang de|en             Set menu language\n\
-           --date YYYY-MM-DD        Show a specific date\n\
-           --tomorrow               Show tomorrow\n\
-           --week                   Show Monday-Friday for the selected week\n\
-           --no-cache               Fetch fresh menu data\n\
-           --allergen CODE          Highlight another allergen code\n\
-           --allergens A,B          Replace highlighted allergen codes\n\
-           --hide-allergens         Hide meals with configured allergens\n\
-           --show-allergens         Show allergen matches again\n\
-           --favorite WORD          Mark meals matching a keyword\n\
-           --help                   Show this help\n\n\
-         Config: {}",
+Options:\n\
+  --lang de|en             Set menu language\n\
+  --date YYYY-MM-DD        Show a specific date\n\
+  --tomorrow               Show tomorrow\n\
+  --week                   Show Monday-Friday for the selected week\n\
+  --no-cache               Fetch fresh menu data\n\
+  --allergen CODE          Highlight another allergen code\n\
+  --allergens A,B          Replace highlighted allergen codes\n\
+  --hide-allergens         Hide meals with configured allergens\n\
+  --show-allergens         Show allergen matches again\n\
+  --favorite WORD          Mark meals matching a keyword\n\
+  --help                   Show this help\n\n\
+Config: {}",
         config_path().display()
     );
 }

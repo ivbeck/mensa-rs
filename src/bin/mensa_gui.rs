@@ -505,7 +505,11 @@ fn render_editorial_toolbar(ui: &mut egui::Ui, app: &mut MensaApp) {
             app.preferences.no_cache = !app.preferences.no_cache;
         }
 
-        let allergen_label = if app.preferences.hide_allergens { "HIDE ALLERGENS · ON" } else { "HIDE ALLERGENS" };
+        let allergen_label = if app.preferences.hide_allergens {
+            "FILTER ON"
+        } else {
+            "FILTER"
+        };
         if ghost_button(ui, allergen_label).clicked() {
             app.preferences.hide_allergens = !app.preferences.hide_allergens;
         }
