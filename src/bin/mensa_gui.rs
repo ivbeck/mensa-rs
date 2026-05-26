@@ -462,62 +462,74 @@ fn render_editorial_header(ui: &mut egui::Ui, app: &MensaApp) {
 }
 
 fn render_editorial_toolbar(ui: &mut egui::Ui, app: &mut MensaApp) {
-    ui.horizontal_wrapped(|ui| {
-        ui.spacing_mut().item_spacing = Vec2::new(14.0, 6.0);
+    ui.vertical(|ui| {
+        ui.horizontal_wrapped(|ui| {
+            ui.spacing_mut().item_spacing = Vec2::new(14.0, 6.0);
 
-        if toggle_chip(ui, "DE", app.preferences.language == "de") && app.preferences.language != "de" {
-            app.preferences.set_language("de");
-            app.start_fetch();
-        }
-        if toggle_chip(ui, "EN", app.preferences.language == "en") && app.preferences.language != "en" {
-            app.preferences.set_language("en");
-            app.start_fetch();
-        }
+            if toggle_chip(ui, "DE", app.preferences.language == "de")
+                && app.preferences.language != "de"
+            {
+                app.preferences.set_language("de");
+                app.start_fetch();
+            }
+            if toggle_chip(ui, "EN", app.preferences.language == "en")
+                && app.preferences.language != "en"
+            {
+                app.preferences.set_language("en");
+                app.start_fetch();
+            }
 
-        ui.add_space(8.0);
-        tiny_divider(ui);
-        ui.add_space(8.0);
+            ui.add_space(8.0);
+            tiny_divider(ui);
+            ui.add_space(8.0);
 
-        if ghost_button(ui, "PREV").clicked() {
-            app.today -= Duration::days(1);
-            app.start_fetch();
-        }
-        if ghost_button(ui, "TODAY").clicked() {
-            app.today = chrono::Local::now().date_naive();
-            app.start_fetch();
-        }
-        if ghost_button(ui, "NEXT").clicked() {
-            app.today += Duration::days(1);
-            app.start_fetch();
-        }
+            if ghost_button(ui, "PREV").clicked() {
+                app.today -= Duration::days(1);
+                app.start_fetch();
+            }
+            if ghost_button(ui, "TODAY").clicked() {
+                app.today = chrono::Local::now().date_naive();
+                app.start_fetch();
+            }
+            if ghost_button(ui, "NEXT").clicked() {
+                app.today += Duration::days(1);
+                app.start_fetch();
+            }
 
-        ui.add_space(8.0);
-        tiny_divider(ui);
-        ui.add_space(8.0);
+            ui.add_space(8.0);
+            tiny_divider(ui);
+            ui.add_space(8.0);
 
-        if ghost_button(ui, "REFRESH").clicked() {
-            app.start_fetch();
-        }
+            if ghost_button(ui, "REFRESH").clicked() {
+                app.start_fetch();
+            }
+
+            ui.add_space(4.0);
+            let cache_label = if app.preferences.no_cache {
+                "BYPASS CACHE · ON"
+            } else {
+                "BYPASS CACHE"
+            };
+            if ghost_button(ui, cache_label).clicked() {
+                app.preferences.no_cache = !app.preferences.no_cache;
+            }
+
+            let allergen_label = if app.preferences.hide_allergens {
+                "FILTER ON"
+            } else {
+                "FILTER"
+            };
+            if ghost_button(ui, allergen_label).clicked() {
+                app.preferences.hide_allergens = !app.preferences.hide_allergens;
+            }
+        });
 
         ui.add_space(4.0);
-        let cache_label = if app.preferences.no_cache { "BYPASS CACHE · ON" } else { "BYPASS CACHE" };
-        if ghost_button(ui, cache_label).clicked() {
-            app.preferences.no_cache = !app.preferences.no_cache;
-        }
-
-        let allergen_label = if app.preferences.hide_allergens {
-            "FILTER ON"
-        } else {
-            "FILTER"
-        };
-        if ghost_button(ui, allergen_label).clicked() {
-            app.preferences.hide_allergens = !app.preferences.hide_allergens;
-        }
-
-        ui.add_space(16.0);
-        if mlg_pill_button(ui).clicked() {
-            app.mlg_mode = true;
-        }
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            if mlg_pill_button(ui).clicked() {
+                app.mlg_mode = true;
+            }
+        });
     });
 }
 
