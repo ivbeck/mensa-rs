@@ -462,7 +462,7 @@ fn render_editorial_header(ui: &mut egui::Ui, app: &MensaApp) {
 }
 
 fn render_editorial_toolbar(ui: &mut egui::Ui, app: &mut MensaApp) {
-    ui.horizontal(|ui| {
+    ui.horizontal_wrapped(|ui| {
         ui.spacing_mut().item_spacing = Vec2::new(14.0, 6.0);
 
         if toggle_chip(ui, "DE", app.preferences.language == "de") && app.preferences.language != "de" {
@@ -514,19 +514,10 @@ fn render_editorial_toolbar(ui: &mut egui::Ui, app: &mut MensaApp) {
             app.preferences.hide_allergens = !app.preferences.hide_allergens;
         }
 
-        ui.add_space(12.0);
-
-        // Reserve the remaining toolbar lane so the right-aligned MLG button
-        // cannot draw over the filter/cache controls at narrower widths.
-        ui.allocate_ui_with_layout(
-            Vec2::new(ui.available_width(), 28.0),
-            egui::Layout::right_to_left(egui::Align::Center),
-            |ui| {
-                if mlg_pill_button(ui).clicked() {
-                    app.mlg_mode = true;
-                }
-            },
-        );
+        ui.add_space(16.0);
+        if mlg_pill_button(ui).clicked() {
+            app.mlg_mode = true;
+        }
     });
 }
 
