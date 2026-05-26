@@ -525,11 +525,15 @@ fn render_editorial_toolbar(ui: &mut egui::Ui, app: &mut MensaApp) {
         });
 
         ui.add_space(4.0);
-        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            if mlg_pill_button(ui).clicked() {
-                app.mlg_mode = true;
-            }
-        });
+        ui.allocate_ui_with_layout(
+            Vec2::new(ui.available_width(), 28.0),
+            egui::Layout::right_to_left(egui::Align::Center),
+            |ui| {
+                if mlg_pill_button(ui).clicked() {
+                    app.mlg_mode = true;
+                }
+            },
+        );
     });
 }
 
