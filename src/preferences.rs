@@ -50,7 +50,7 @@ impl Preferences {
         let mut prefs = Self::default();
 
         if let Some(language) = clean_language(config.language.as_deref()) {
-            prefs.language = language.to_owned();
+            language.clone_into(&mut prefs.language);
         }
         if let Some(no_cache) = config.no_cache {
             prefs.no_cache = no_cache;
@@ -70,7 +70,7 @@ impl Preferences {
 
     pub fn set_language(&mut self, language: &str) -> bool {
         if let Some(clean) = clean_language(Some(language)) {
-            self.language = clean.to_owned();
+            clean.clone_into(&mut self.language);
             true
         } else {
             false
