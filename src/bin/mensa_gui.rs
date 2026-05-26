@@ -514,12 +514,19 @@ fn render_editorial_toolbar(ui: &mut egui::Ui, app: &mut MensaApp) {
             app.preferences.hide_allergens = !app.preferences.hide_allergens;
         }
 
-        // MLG toggle pinned right.
-        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            if mlg_pill_button(ui).clicked() {
-                app.mlg_mode = true;
-            }
-        });
+        ui.add_space(12.0);
+
+        // Reserve the remaining toolbar lane so the right-aligned MLG button
+        // cannot draw over the filter/cache controls at narrower widths.
+        ui.allocate_ui_with_layout(
+            Vec2::new(ui.available_width(), 28.0),
+            egui::Layout::right_to_left(egui::Align::Center),
+            |ui| {
+                if mlg_pill_button(ui).clicked() {
+                    app.mlg_mode = true;
+                }
+            },
+        );
     });
 }
 
