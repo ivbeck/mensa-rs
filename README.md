@@ -33,3 +33,24 @@ mensa
 ```
 
 Runs once and prints today's menu. The response is cached under `$XDG_CACHE_HOME/mensa/` (or `~/.cache/mensa/`) so repeated calls within the same day do not hit the network.
+
+Useful options:
+
+```bash
+mensa --tomorrow
+mensa --date 2026-05-27
+mensa --week
+mensa --lang en
+mensa --allergen Ei --hide-allergens
+mensa --favorite curry
+```
+
+The optional config file lives at `$XDG_CONFIG_HOME/mensa/config.toml` (or `~/.config/mensa/config.toml`):
+
+```toml
+language = "en"
+no_cache = false
+allergens = ["Mi", "Ei"]
+hide_allergens = false
+favorites = ["curry", "pommes", "vegan"]
+```
