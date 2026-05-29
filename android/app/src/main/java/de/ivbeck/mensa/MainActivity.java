@@ -1,35 +1,27 @@
 package de.ivbeck.mensa;
 
 import android.app.Activity;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.view.Gravity;
 import android.view.View;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
-
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public final class MainActivity extends Activity {
-    private static final int BG_DEEP = Color.rgb(0x10, 0x0E, 0x0B);
-    private static final int BG_SURFACE = Color.rgb(0x1B, 0x17, 0x12);
-    private static final int INK = Color.rgb(0xF1, 0xEA, 0xDD);
-    private static final int INK_MUTED = Color.rgb(0x95, 0x8B, 0x7C);
-    private static final int ACCENT = Color.rgb(0xE4, 0xA3, 0x3D);
-    private static final int OXBLOOD_BG = Color.rgb(0x4A, 0x1C, 0x18);
-    private static final int OXBLOOD_INK = Color.rgb(0xFF, 0xC9, 0xC0);
     private static final String LANG = "de";
     private static final String ALLERGENS = "Mi";
     private static final String FAVORITES = "";
@@ -38,20 +30,32 @@ public final class MainActivity extends Activity {
         System.loadLibrary("mensa");
     }
 
-    private final Calendar date = Calendar.getInstance();
+    private final Calendar selectedDate = Calendar.getInstance();
     private final SimpleDateFormat apiDate = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT);
     private final SimpleDateFormat displayDate = new SimpleDateFormat("EEEE, dd.MM.yyyy", Locale.GERMANY);
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainThread = new Handler(Looper.getMainLooper());
-    private LinearLayout mealList;
+
+    private RecyclerView dateStrip;
+    private DateAdapter dateAdapter;
+    private RecyclerView mealList;
+    private MealAdapter mealAdapter;
     private TextView header;
-    private Button filterButton;
+    private TextView subheader;
+    private ImageButton filterButton;
     private boolean hideAllergens;
+    private View loadingView;
+    private View errorView;
+    private TextView errorMessage;
+    private View emptyView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(buildContent());
+        setContentView(R.layout.activity_main);
+        initViews();
+        setupDateStrip();
+        setupMealList();
         loadMenu();
     }
 
@@ -61,64 +65,63 @@ public final class MainActivity extends Activity {
         super.onDestroy();
     }
 
-    private View buildContent() {
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(20), dp(18), dp(20), dp(12));
-        root.setBackgroundColor(BG_DEEP);
+    private void initViews() {
+        header = findViewById(R.id.header);
+        subheader = findViewById(R.id.subheader);
+        dateStrip = findViewById(R.id.date_strip);
+        mealList = findViewById(R.id.meal_list);
+        filterButton = findViewById(R.id.filter_button);
+        loadingView = findViewById(R.id.loading_view);
+        errorView = findViewById(R.id.error_view);
+        errorMessage = findViewById(R.id.error_message);
+        emptyView = findViewById(R.id.empty_view);
 
-        header = label("Mensa am Schloss", 24, ACCENT);
-        root.addView(header);
-
-        LinearLayout toolbar = new LinearLayout(this);
-        toolbar.setGravity(Gravity.CENTER_VERTICAL);
-        toolbar.setPadding(0, dp(12), 0, dp(10));
-        root.addView(toolbar);
-
-        toolbar.addView(button("PREV", v -> {
-            date.add(Calendar.DAY_OF_MONTH, -1);
-            loadMenu();
-        }));
-        toolbar.addView(button("TODAY", v -> {
-            date.setTimeInMillis(System.currentTimeMillis());
-            loadMenu();
-        }));
-        toolbar.addView(button("NEXT", v -> {
-            date.add(Calendar.DAY_OF_MONTH, 1);
-            loadMenu();
-        }));
-
-        filterButton = button("FILTER", v -> {
+        filterButton.setOnClickListener(v -> {
             hideAllergens = !hideAllergens;
-            filterButton.setText(hideAllergens ? "FILTER ON" : "FILTER");
+            filterButton.setAlpha(hideAllergens ? 1.0f : 0.5f);
             loadMenu();
         });
-        toolbar.addView(filterButton);
+        filterButton.setAlpha(hideAllergens ? 1.0f : 0.5f);
+    }
 
-        Button mlg = button("MLG MODE", v -> {
-            header.setTextColor(Color.rgb(0x55, 0xFF, 0x88));
-            mealList.setBackgroundColor(Color.rgb(0x18, 0x08, 0x24));
+    private void setupDateStrip() {
+        dateAdapter = new DateAdapter(this);
+        dateStrip.setLayoutManager(
+            new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        dateStrip.setAdapter(dateAdapter);
+        dateAdapter.setOnDateSelectedListener(date -> {
+            selectedDate.setTimeInMillis(date.getTimeInMillis());
+            dateAdapter.setSelectedDate(selectedDate);
+            loadMenu();
         });
-        toolbar.addView(mlg);
+        populateDateStrip();
+    }
 
-        ScrollView scroll = new ScrollView(this);
-        mealList = new LinearLayout(this);
-        mealList.setOrientation(LinearLayout.VERTICAL);
-        scroll.addView(mealList);
-        root.addView(scroll, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                0,
-                1
-        ));
+    private void populateDateStrip() {
+        List<Calendar> dates = new ArrayList<>();
+        Calendar cal = (Calendar) selectedDate.clone();
+        cal.add(Calendar.DAY_OF_MONTH, -3);
+        for (int i = 0; i < 7; i++) {
+            Calendar c = (Calendar) cal.clone();
+            dates.add(c);
+            cal.add(Calendar.DAY_OF_MONTH, 1);
+        }
+        dateAdapter.setDates(dates);
+        dateAdapter.setSelectedDate(selectedDate);
+    }
 
-        return root;
+    private void setupMealList() {
+        mealAdapter = new MealAdapter(this);
+        mealList.setLayoutManager(new LinearLayoutManager(this));
+        mealList.setAdapter(mealAdapter);
     }
 
     private void loadMenu() {
-        String dateString = apiDate.format(date.getTime());
-        header.setText("Mensa am Schloss - " + displayDate.format(date.getTime()));
-        mealList.removeAllViews();
-        mealList.addView(label("Wird angerichtet...", 16, INK_MUTED));
+        String dateString = apiDate.format(selectedDate.getTime());
+        header.setText("Mensa am Schloss");
+        subheader.setText(displayDate.format(selectedDate.getTime()));
+
+        showLoading();
 
         executor.execute(() -> {
             String json = MenuBridge.fetchMenuJson(
@@ -132,82 +135,39 @@ public final class MainActivity extends Activity {
         });
     }
 
+    private void showLoading() {
+        loadingView.setVisibility(View.VISIBLE);
+        errorView.setVisibility(View.GONE);
+        emptyView.setVisibility(View.GONE);
+    }
+
     private void renderMenu(String json) {
-        mealList.removeAllViews();
+        loadingView.setVisibility(View.GONE);
+        errorView.setVisibility(View.GONE);
+        emptyView.setVisibility(View.GONE);
+
         try {
             JSONObject response = new JSONObject(json);
             if (!response.optBoolean("ok")) {
-                mealList.addView(label(response.optString("error", "Menu unavailable"), 16, OXBLOOD_INK));
+                showError(response.optString("error", "Menu unavailable"));
                 return;
             }
 
             JSONArray meals = response.getJSONArray("meals");
             if (meals.length() == 0) {
-                mealList.addView(label("Keine Gerichte fuer dieses Datum.", 16, INK_MUTED));
+                emptyView.setVisibility(View.VISIBLE);
                 return;
             }
 
-            for (int i = 0; i < meals.length(); i++) {
-                mealList.addView(mealCard(meals.getJSONObject(i)));
-            }
+            mealAdapter.setMeals(meals);
         } catch (JSONException error) {
-            mealList.addView(label("Menu response could not be read: " + error.getMessage(), 16, OXBLOOD_INK));
+            showError("Menu response could not be read: " + error.getMessage());
         }
     }
 
-    private View mealCard(JSONObject meal) throws JSONException {
-        LinearLayout card = new LinearLayout(this);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(14), dp(12), dp(14), dp(12));
-        card.setBackgroundColor(BG_SURFACE);
-
-        String title = meal.getString("name") + " - " + meal.getString("price");
-        if (meal.optBoolean("favorite")) {
-            title = "* " + title;
-        }
-        card.addView(label(title, 18, INK));
-
-        JSONArray items = meal.getJSONArray("items");
-        for (int i = 0; i < items.length(); i++) {
-            JSONObject item = items.getJSONObject(i);
-            int color = item.optBoolean("has_allergen") ? OXBLOOD_INK : INK_MUTED;
-            TextView itemView = label("- " + item.getString("text"), 14, color);
-            if (item.optBoolean("has_allergen")) {
-                itemView.setBackgroundColor(OXBLOOD_BG);
-                itemView.setPadding(dp(8), dp(4), dp(8), dp(4));
-            }
-            card.addView(itemView);
-        }
-
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        );
-        params.setMargins(0, 0, 0, dp(12));
-        card.setLayoutParams(params);
-        return card;
-    }
-
-    private TextView label(String text, int sp, int color) {
-        TextView label = new TextView(this);
-        label.setText(text);
-        label.setTextColor(color);
-        label.setTextSize(sp);
-        label.setPadding(0, dp(4), 0, dp(4));
-        return label;
-    }
-
-    private Button button(String text, View.OnClickListener listener) {
-        Button button = new Button(this);
-        button.setText(text);
-        button.setTextColor(INK);
-        button.setTextSize(11);
-        button.setBackgroundColor(Color.TRANSPARENT);
-        button.setOnClickListener(listener);
-        return button;
-    }
-
-    private int dp(int value) {
-        return Math.round(value * getResources().getDisplayMetrics().density);
+    private void showError(String message) {
+        errorView.setVisibility(View.VISIBLE);
+        errorMessage.setText(message);
+        errorView.findViewById(R.id.retry_button).setOnClickListener(v -> loadMenu());
     }
 }
