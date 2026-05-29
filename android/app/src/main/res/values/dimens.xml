@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="card_padding">16dp</dimen>
+    <dimen name="card_margin_bottom">12dp</dimen>
+    <dimen name="card_radius">16dp</dimen>
+    <dimen name="card_min_height">72dp</dimen>
+    <dimen name="price_badge_padding_horizontal">10dp</dimen>
+    <dimen name="price_badge_padding_vertical">4dp</dimen>
+    <dimen name="price_badge_radius">6dp</dimen>
+    <dimen name="date_chip_width">48dp</dimen>
+    <dimen name="date_chip_height">64dp</dimen>
+    <dimen name="spacing_xs">4dp</dimen>
+    <dimen name="spacing_sm">8dp</dimen>
+    <dimen name="spacing_md">12dp</dimen>
+    <dimen name="spacing_lg">16dp</dimen>
+    <dimen name="spacing_xl">20dp</dimen>
+    <dimen name="text_chip_weekday">11sp</dimen>
+    <dimen name="text_chip_date">15sp</dimen>
+    <dimen name="text_card_title">15sp</dimen>
+    <dimen name="text_card_ingredients">12sp</dimen>
+    <dimen name="text_badge">11sp</dimen>
+    <dimen name="text_header">18sp</dimen>
+    <dimen name="text_subheader">13sp</dimen>
+</resources>
