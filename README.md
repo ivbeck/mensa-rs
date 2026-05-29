@@ -75,4 +75,4 @@ cd android
 
 The Gradle build calls `cargo ndk` and writes the generated native libraries into `android/app/src/main/jniLibs/`.
 
-GitHub Actions builds `mensa-android.apk` and attaches it to the GitHub Release when pushing to `master`, `release`, or a `v*` tag.
+GitHub Actions builds a signed `mensa-android.apk` and attaches it to the GitHub Release when pushing to `master`, `release`, or a `v*` tag.
