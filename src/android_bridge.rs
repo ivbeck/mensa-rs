@@ -152,13 +152,13 @@ fn split_csv(raw: &str) -> Vec<String> {
 mod jni_bridge {
     use jni::objects::{JClass, JString};
     use jni::sys::{jboolean, jstring};
-    use jni::JNIEnv;
+    use jni::{Env, EnvUnowned};
 
     use super::fetch_menu_json;
 
     #[no_mangle]
     pub extern "system" fn Java_de_ivbeck_mensa_MenuBridge_fetchMenuJson(
-        mut env: JNIEnv<'_>,
+        mut env: EnvUnowned<'_>,
         _class: JClass<'_>,
         date: JString<'_>,
         lang: JString<'_>,
@@ -166,25 +166,20 @@ mod jni_bridge {
         hide_allergens: jboolean,
         favorites: JString<'_>,
     ) -> jstring {
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let date = java_string(&mut env, &date);
-            let lang = java_string(&mut env, &lang);
-            let allergens = java_string(&mut env, &allergens);
-            let favorites = java_string(&mut env, &favorites);
-            fetch_menu_json(&date, &lang, &allergens, hide_allergens != 0, &favorites)
-        }))
-        .unwrap_or_else(|_| {
-            r#"{"ok":false,"date":"","lang":"","error":"Rust panic","meals":[]}"#.to_owned()
-        });
+        env.with_env(|env| -> jni::errors::Result<jstring> {
+            let date = java_string(env, &date);
+            let lang = java_string(env, &lang);
+            let allergens = java_string(env, &allergens);
+            let favorites = java_string(env, &favorites);
+            let result = fetch_menu_json(&date, &lang, &allergens, hide_allergens, &favorites);
 
-        env.new_string(result)
-            .map_or(std::ptr::null_mut(), JString::into_raw)
+            Ok(JString::from_str(env, result)?.into_raw())
+        })
+        .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
     }
 
-    fn java_string(env: &mut JNIEnv<'_>, value: &JString<'_>) -> String {
-        env.get_string(value)
-            .map(|value| value.to_string_lossy().into_owned())
-            .unwrap_or_default()
+    fn java_string(env: &mut Env<'_>, value: &JString<'_>) -> String {
+        value.try_to_string(env).unwrap_or_default()
     }
 }
 
