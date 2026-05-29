@@ -1,7 +1,9 @@
 target/
 Cargo.lock
 .claude
+.superpowers
 CLAUDE.md
+docs/
 android/.gradle/
 android/**/build/
 android/**/src/main/jniLibs/
