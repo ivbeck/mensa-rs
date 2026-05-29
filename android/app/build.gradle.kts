@@ -14,6 +14,13 @@ android {
         versionName = "0.1.0"
     }
 
+    buildTypes {
+        release {
+            // GitHub release APKs must be signed to be installable when sideloaded.
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
     packaging {
         jniLibs {
             useLegacyPackaging = true
