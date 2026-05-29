@@ -37,7 +37,10 @@ impl Default for Preferences {
         Self {
             language: DEFAULT_LANG.to_owned(),
             no_cache: false,
-            allergens: DEFAULT_ALLERGENS.iter().map(|code| (*code).to_owned()).collect(),
+            allergens: DEFAULT_ALLERGENS
+                .iter()
+                .map(|code| (*code).to_owned())
+                .collect(),
             hide_allergens: false,
             favorites: Vec::new(),
         }

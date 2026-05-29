@@ -117,10 +117,7 @@ fn print_help() {
     ]
     .join("\n");
 
-    println!(
-        "{help}\n\nConfig: {}",
-        config_path().display()
-    );
+    println!("{help}\n\nConfig: {}", config_path().display());
 }
 
 fn render_output(
@@ -223,7 +220,10 @@ fn push_meal_lines(
     Ok(())
 }
 
-fn fetch_meals(date: NaiveDate, preferences: &Preferences) -> Result<Vec<Meal>, Box<dyn std::error::Error>> {
+fn fetch_meals(
+    date: NaiveDate,
+    preferences: &Preferences,
+) -> Result<Vec<Meal>, Box<dyn std::error::Error>> {
     let date_str = date.format("%Y-%m-%d").to_string();
     let html = cached_fetch(&date_str, &preferences.language, preferences.no_cache)?;
     parse_menu(&html).map_err(Into::into)
@@ -231,7 +231,9 @@ fn fetch_meals(date: NaiveDate, preferences: &Preferences) -> Result<Vec<Meal>, 
 
 fn week_dates(date: NaiveDate) -> Vec<NaiveDate> {
     let monday = date - Duration::days(i64::from(date.weekday().num_days_from_monday()));
-    (0_i64..5).map(|offset| monday + Duration::days(offset)).collect()
+    (0_i64..5)
+        .map(|offset| monday + Duration::days(offset))
+        .collect()
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -246,7 +248,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let meals = match fetch_meals(date, &args.preferences) {
             Ok(meals) => meals,
             Err(e) => {
-                eprintln!("{}", style_dim(&format!("Mensa: could not fetch menu ({e})")));
+                eprintln!(
+                    "{}",
+                    style_dim(&format!("Mensa: could not fetch menu ({e})"))
+                );
                 process::exit(1);
             }
         };

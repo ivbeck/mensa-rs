@@ -54,3 +54,23 @@ allergens = ["Mi", "Ei"]
 hide_allergens = false
 favorites = ["curry", "pommes", "vegan"]
 ```
+
+## Android app
+
+An Android shell app lives in `android/`. It reuses the Rust menu fetcher and parser through a JNI library (`libmensa.so`) and renders the result with a small native Java UI.
+
+Prerequisites:
+
+```bash
+rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
+cargo install cargo-ndk
+```
+
+Install Android SDK API 36, Android Build Tools 36, and NDK 28.2+ in Android Studio, then build:
+
+```bash
+cd android
+./gradlew :app:assembleDebug
+```
+
+The Gradle build calls `cargo ndk` and writes the generated native libraries into `android/app/src/main/jniLibs/`.

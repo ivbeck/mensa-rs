@@ -2,3 +2,6 @@ target/
 Cargo.lock
 .claude
 CLAUDE.md
+android/.gradle/
+android/**/build/
+android/**/src/main/jniLibs/
