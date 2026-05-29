@@ -11,8 +11,8 @@ pub enum DisplayError {
 /// # Errors
 /// Returns an error if the ANSI-stripping regex cannot be compiled.
 pub fn visible_len(s: &str) -> Result<usize, DisplayError> {
-    let re = Regex::new(r"\x1b\[[0-9;]*m")
-        .map_err(|e| DisplayError::VisibleLength(e.to_string()))?;
+    let re =
+        Regex::new(r"\x1b\[[0-9;]*m").map_err(|e| DisplayError::VisibleLength(e.to_string()))?;
     Ok(re.replace_all(s, "").chars().count())
 }
 

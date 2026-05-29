@@ -3,12 +3,13 @@
 use std::sync::mpsc;
 use std::thread;
 
-use chrono::Datelike as _;
+use chrono::{Datelike as _, Duration};
 use eframe::egui;
 use eframe::egui::{Color32, FontData, FontDefinitions, FontFamily, FontId, Pos2, Rect, Rounding, Stroke, Vec2};
 
 use mensa::api::cached_fetch;
 use mensa::meal::{parse_menu, Meal};
+use mensa::preferences::{load_preferences, Preferences};
 
 const MLG_PHRASES: &[&str] = &[
     "420", "MLG", "YOLO", "360 NOSCOPE", "DANK", "REKT", "SWAG", "DORITOS",
@@ -51,8 +52,7 @@ enum FetchState {
 
 struct MensaApp {
     state: FetchState,
-    lang: &'static str,
-    no_cache: bool,
+    preferences: Preferences,
     today: chrono::NaiveDate,
     rx: Option<mpsc::Receiver<Result<Vec<Meal>, String>>>,
     mlg_mode: bool,
@@ -63,8 +63,8 @@ struct MensaApp {
 impl MensaApp {
     fn start_fetch(&mut self) {
         let date_str = self.today.format("%Y-%m-%d").to_string();
-        let lang = self.lang.to_owned();
-        let no_cache = self.no_cache;
+        let lang = self.preferences.language.clone();
+        let no_cache = self.preferences.no_cache;
         let (tx, rx) = mpsc::channel();
         self.rx = Some(rx);
         self.state = FetchState::Loading;
@@ -82,7 +82,7 @@ impl MensaApp {
             "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
         ];
         let idx = self.today.weekday().num_days_from_monday() as usize;
-        if self.lang == "en" {
+        if self.preferences.language == "en" {
             (
                 DAYS_EN[idx].to_owned(),
                 self.today.format("%m / %d / %Y").to_string(),
@@ -100,8 +100,7 @@ impl Default for MensaApp {
     fn default() -> Self {
         let mut app = Self {
             state: FetchState::Loading,
-            lang: "de",
-            no_cache: false,
+            preferences: load_preferences().unwrap_or_else(|_| Preferences::default()),
             today: chrono::Local::now().date_naive(),
             rx: None,
             mlg_mode: false,
@@ -426,7 +425,7 @@ fn render_editorial_header(ui: &mut egui::Ui, app: &MensaApp) {
         ui.vertical(|ui| {
             // Eyebrow
             ui.label(
-                egui::RichText::new(if app.lang == "en" { "TODAY · LUNCH" } else { "HEUTE · MITTAG" })
+                egui::RichText::new(if app.preferences.language == "en" { "TODAY · LUNCH" } else { "HEUTE · MITTAG" })
                     .font(body_medium_font(10.5))
                     .color(ACCENT)
                     .extra_letter_spacing(2.4),
@@ -463,38 +462,78 @@ fn render_editorial_header(ui: &mut egui::Ui, app: &MensaApp) {
 }
 
 fn render_editorial_toolbar(ui: &mut egui::Ui, app: &mut MensaApp) {
-    ui.horizontal(|ui| {
-        ui.spacing_mut().item_spacing = Vec2::new(14.0, 6.0);
+    ui.vertical(|ui| {
+        ui.horizontal_wrapped(|ui| {
+            ui.spacing_mut().item_spacing = Vec2::new(14.0, 6.0);
 
-        if toggle_chip(ui, "DE", app.lang == "de") && app.lang != "de" {
-            app.lang = "de";
-            app.start_fetch();
-        }
-        if toggle_chip(ui, "EN", app.lang == "en") && app.lang != "en" {
-            app.lang = "en";
-            app.start_fetch();
-        }
+            if toggle_chip(ui, "DE", app.preferences.language == "de")
+                && app.preferences.language != "de"
+            {
+                app.preferences.set_language("de");
+                app.start_fetch();
+            }
+            if toggle_chip(ui, "EN", app.preferences.language == "en")
+                && app.preferences.language != "en"
+            {
+                app.preferences.set_language("en");
+                app.start_fetch();
+            }
 
-        ui.add_space(8.0);
-        tiny_divider(ui);
-        ui.add_space(8.0);
+            ui.add_space(8.0);
+            tiny_divider(ui);
+            ui.add_space(8.0);
 
-        if ghost_button(ui, "REFRESH").clicked() {
-            app.start_fetch();
-        }
+            if ghost_button(ui, "PREV").clicked() {
+                app.today -= Duration::days(1);
+                app.start_fetch();
+            }
+            if ghost_button(ui, "TODAY").clicked() {
+                app.today = chrono::Local::now().date_naive();
+                app.start_fetch();
+            }
+            if ghost_button(ui, "NEXT").clicked() {
+                app.today += Duration::days(1);
+                app.start_fetch();
+            }
 
-        ui.add_space(4.0);
-        let cache_label = if app.no_cache { "BYPASS CACHE · ON" } else { "BYPASS CACHE" };
-        if ghost_button(ui, cache_label).clicked() {
-            app.no_cache = !app.no_cache;
-        }
+            ui.add_space(8.0);
+            tiny_divider(ui);
+            ui.add_space(8.0);
 
-        // MLG toggle pinned right.
-        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            if mlg_pill_button(ui).clicked() {
-                app.mlg_mode = true;
+            if ghost_button(ui, "REFRESH").clicked() {
+                app.start_fetch();
+            }
+
+            ui.add_space(4.0);
+            let cache_label = if app.preferences.no_cache {
+                "BYPASS CACHE · ON"
+            } else {
+                "BYPASS CACHE"
+            };
+            if ghost_button(ui, cache_label).clicked() {
+                app.preferences.no_cache = !app.preferences.no_cache;
+            }
+
+            let allergen_label = if app.preferences.hide_allergens {
+                "FILTER ON"
+            } else {
+                "FILTER"
+            };
+            if ghost_button(ui, allergen_label).clicked() {
+                app.preferences.hide_allergens = !app.preferences.hide_allergens;
             }
         });
+
+        ui.add_space(4.0);
+        ui.allocate_ui_with_layout(
+            Vec2::new(ui.available_width(), 28.0),
+            egui::Layout::right_to_left(egui::Align::Center),
+            |ui| {
+                if mlg_pill_button(ui).clicked() {
+                    app.mlg_mode = true;
+                }
+            },
+        );
     });
 }
 
@@ -550,19 +589,46 @@ fn render_editorial_body(ui: &mut egui::Ui, app: &MensaApp, t: f64) {
             FetchState::Loading => render_loading_editorial(ui, app, t),
             FetchState::Empty => render_empty_editorial(ui, app),
             FetchState::Failed(msg) => render_error_editorial(ui, msg),
-            FetchState::Ready(meals) => {
-                for (idx, meal) in meals.iter().enumerate() {
-                    let alpha = reveal_alpha(t, app.ready_started_at, idx);
-                    render_editorial_meal(ui, meal, idx, alpha);
-                    if idx + 1 < meals.len() {
-                        ui.add_space(14.0);
-                        hairline(ui, RULE);
-                        ui.add_space(14.0);
-                    }
-                }
-                ui.add_space(24.0);
-            }
+            FetchState::Ready(meals) => render_editorial_meals(ui, app, meals, t),
         });
+}
+
+fn render_editorial_meals(ui: &mut egui::Ui, app: &MensaApp, meals: &[Meal], t: f64) {
+    let visible = visible_meals(meals, app);
+    if visible.is_empty() {
+        render_empty_editorial(ui, app);
+        if app.preferences.hide_allergens && !meals.is_empty() {
+            ui.vertical_centered(|ui| {
+                ui.label(
+                    egui::RichText::new("Filtered by allergen preferences.")
+                        .font(body_font(12.0))
+                        .color(INK_MUTED),
+                );
+            });
+        }
+        return;
+    }
+
+    for (idx, meal) in visible.iter().enumerate() {
+        let alpha = reveal_alpha(t, app.ready_started_at, idx);
+        render_editorial_meal(ui, app, meal, idx, alpha);
+        if idx + 1 < visible.len() {
+            ui.add_space(14.0);
+            hairline(ui, RULE);
+            ui.add_space(14.0);
+        }
+    }
+    ui.add_space(24.0);
+}
+
+fn visible_meals<'a>(meals: &'a [Meal], app: &MensaApp) -> Vec<&'a Meal> {
+    meals
+        .iter()
+        .filter(|meal| {
+            !app.preferences.hide_allergens
+                || !meal.has_any_allergen(&app.preferences.allergens)
+        })
+        .collect()
 }
 
 #[allow(clippy::cast_possible_truncation)]
@@ -578,7 +644,7 @@ fn render_loading_editorial(ui: &mut egui::Ui, app: &MensaApp, t: f64) {
         );
         ui.add_space(8.0);
         ui.label(
-            egui::RichText::new(if app.lang == "en" { "Setting the table…" } else { "Wird angerichtet…" })
+            egui::RichText::new(if app.preferences.language == "en" { "Setting the table…" } else { "Wird angerichtet…" })
                 .font(body_font(13.0))
                 .color(INK_MUTED),
         );
@@ -589,13 +655,13 @@ fn render_empty_editorial(ui: &mut egui::Ui, app: &MensaApp) {
     ui.add_space(40.0);
     ui.vertical_centered(|ui| {
         ui.label(
-            egui::RichText::new(if app.lang == "en" { "Kitchen is dark today." } else { "Heute bleibt die Küche kalt." })
+            egui::RichText::new(if app.preferences.language == "en" { "Kitchen is dark today." } else { "Heute bleibt die Küche kalt." })
                 .font(display_font(22.0))
                 .color(INK),
         );
         ui.add_space(6.0);
         ui.label(
-            egui::RichText::new(if app.lang == "en" { "No meals listed for this date." } else { "Keine Gerichte für heute eingetragen." })
+            egui::RichText::new(if app.preferences.language == "en" { "No meals listed for this date." } else { "Keine Gerichte für heute eingetragen." })
                 .font(body_font(12.5))
                 .color(INK_MUTED),
         );
@@ -626,9 +692,10 @@ fn render_error_editorial(ui: &mut egui::Ui, msg: &str) {
 }
 
 #[allow(clippy::cast_precision_loss)]
-fn render_editorial_meal(ui: &mut egui::Ui, meal: &Meal, idx: usize, alpha: f32) {
+fn render_editorial_meal(ui: &mut egui::Ui, app: &MensaApp, meal: &Meal, idx: usize, alpha: f32) {
     let row_alpha = alpha;
     let y_offset = (1.0 - alpha) * 6.0;
+    let favorite = meal.matches_favorites(&app.preferences.favorites);
     ui.add_space(y_offset);
 
     ui.horizontal_top(|ui| {
@@ -654,6 +721,14 @@ fn render_editorial_meal(ui: &mut egui::Ui, meal: &Meal, idx: usize, alpha: f32)
                         .font(display_font(20.0))
                         .color(ui_with_alpha(row_alpha)),
                 );
+                if favorite {
+                    ui.label(
+                        egui::RichText::new("FAVORITE")
+                            .font(body_medium_font(10.5))
+                            .color(color_with_alpha(ACCENT, row_alpha))
+                            .extra_letter_spacing(1.4),
+                    );
+                }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
                     ui.label(
                         egui::RichText::new(meal.price_info())
@@ -669,7 +744,7 @@ fn render_editorial_meal(ui: &mut egui::Ui, meal: &Meal, idx: usize, alpha: f32)
                 let tokens = &meal.ingredients;
                 let last = tokens.len().saturating_sub(1);
                 for (i, token) in tokens.iter().enumerate() {
-                    if token.has_milk {
+                    if token.has_any_code(&app.preferences.allergens) {
                         allergen_pill(ui, &token.text);
                     } else {
                         let txt = token.text.trim();
@@ -715,19 +790,33 @@ fn render_mlg_header(ui: &mut egui::Ui, app: &MensaApp, t32: f32) {
 
 fn render_mlg_toolbar(ui: &mut egui::Ui, app: &mut MensaApp, ctx: &egui::Context, t32: f32) {
     ui.horizontal(|ui| {
-        if ui.selectable_label(app.lang == "de", "DE").clicked() {
-            app.lang = "de";
+        if ui.selectable_label(app.preferences.language == "de", "DE").clicked() {
+            app.preferences.set_language("de");
             app.start_fetch();
         }
-        if ui.selectable_label(app.lang == "en", "EN").clicked() {
-            app.lang = "en";
+        if ui.selectable_label(app.preferences.language == "en", "EN").clicked() {
+            app.preferences.set_language("en");
+            app.start_fetch();
+        }
+        ui.separator();
+        if ui.button("\u{25C0}").clicked() {
+            app.today -= Duration::days(1);
+            app.start_fetch();
+        }
+        if ui.button("Today").clicked() {
+            app.today = chrono::Local::now().date_naive();
+            app.start_fetch();
+        }
+        if ui.button("\u{25B6}").clicked() {
+            app.today += Duration::days(1);
             app.start_fetch();
         }
         ui.separator();
         if ui.button("\u{27F3}  Refresh").clicked() {
             app.start_fetch();
         }
-        ui.checkbox(&mut app.no_cache, "No cache");
+        ui.checkbox(&mut app.preferences.no_cache, "No cache");
+        ui.checkbox(&mut app.preferences.hide_allergens, "Hide allergens");
         ui.separator();
         let mlg_label = "\u{1F3AE} MLG MODE: ON \u{1F525}";
         let btn_color = rainbow((t32 * 2.8) % 1.0);
@@ -773,8 +862,18 @@ fn render_mlg_body(ui: &mut egui::Ui, app: &MensaApp, t: f64) {
             );
         }
         FetchState::Ready(meals) => {
-            for (idx, meal) in meals.iter().enumerate() {
-                render_mlg_meal(ui, meal, t, idx);
+            let visible = visible_meals(meals, app);
+            if visible.is_empty() {
+                ui.label(
+                    egui::RichText::new("\u{1F480} ALL MEALS FILTERED \u{1F480}")
+                        .color(Color32::from_rgb(255, 60, 60))
+                        .strong()
+                        .size(18.0),
+                );
+                return;
+            }
+            for (idx, meal) in visible.iter().enumerate() {
+                render_mlg_meal(ui, app, meal, t, idx);
                 ui.add_space(6.0);
             }
         }
@@ -782,10 +881,11 @@ fn render_mlg_body(ui: &mut egui::Ui, app: &MensaApp, t: f64) {
 }
 
 #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
-fn render_mlg_meal(ui: &mut egui::Ui, meal: &Meal, t: f64, idx: usize) {
+fn render_mlg_meal(ui: &mut egui::Ui, app: &MensaApp, meal: &Meal, t: f64, idx: usize) {
     let t32 = t as f32;
     let fidx = idx as f32;
     let hue = fidx.mul_add(0.17, t32 * 0.38) % 1.0;
+    let favorite = meal.matches_favorites(&app.preferences.favorites);
     egui::Frame::group(ui.style())
         .stroke(Stroke::new(2.5, rainbow(hue)))
         .show(ui, |ui| {
@@ -797,12 +897,19 @@ fn render_mlg_meal(ui: &mut egui::Ui, meal: &Meal, t: f64, idx: usize) {
                     .color(rainbow(name_hue))
                     .size(name_size),
             );
+            if favorite {
+                ui.label(
+                    egui::RichText::new("\u{2B50} FAVORITE MATCH \u{2B50}")
+                        .color(Color32::from_rgb(255, 220, 80))
+                        .strong(),
+                );
+            }
             ui.horizontal_wrapped(|ui| {
                 let tokens = &meal.ingredients;
                 let last = tokens.len().saturating_sub(1);
                 for (i, token) in tokens.iter().enumerate() {
                     let sep = if i < last { ", " } else { "" };
-                    if token.has_milk {
+                    if token.has_any_code(&app.preferences.allergens) {
                         let milk_hue = t32.mul_add(9.0, i as f32 * 0.14) % 1.0;
                         ui.label(
                             egui::RichText::new(format!(

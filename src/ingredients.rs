@@ -6,14 +6,25 @@ pub enum IngredientError {
     ParseError(#[from] regex::Error),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IngredientToken {
     pub text: String,
+    pub codes: Vec<String>,
     pub has_milk: bool,
 }
 
 #[must_use]
 pub fn contains_milk(codes: &[&str]) -> bool {
     codes.contains(&"Mi")
+}
+
+impl IngredientToken {
+    #[must_use]
+    pub fn has_any_code(&self, codes: &[String]) -> bool {
+        codes
+            .iter()
+            .any(|code| self.codes.iter().any(|own| own.eq_ignore_ascii_case(code)))
+    }
 }
 
 /// # Errors
@@ -46,6 +57,7 @@ pub fn tokenize_ingredients(raw: &str) -> Result<Vec<IngredientToken>, Ingredien
             if !text.is_empty() {
                 tokens.push(IngredientToken {
                     text: normalize_whitespace(text)?,
+                    codes: codes.iter().map(|code| (*code).to_owned()).collect(),
                     has_milk: contains_milk(&codes),
                 });
             }
@@ -54,6 +66,7 @@ pub fn tokenize_ingredients(raw: &str) -> Result<Vec<IngredientToken>, Ingredien
             if !text.is_empty() {
                 tokens.push(IngredientToken {
                     text: normalize_whitespace(text)?,
+                    codes: Vec::new(),
                     has_milk: false,
                 });
             }
@@ -67,6 +80,7 @@ pub fn tokenize_ingredients(raw: &str) -> Result<Vec<IngredientToken>, Ingredien
         let cleaned = normalize_whitespace(cleaned.trim());
         tokens.push(IngredientToken {
             text: cleaned?,
+            codes: Vec::new(),
             has_milk: false,
         });
     }
