@@ -81,11 +81,13 @@ public final class DateAdapter extends RecyclerView.Adapter<DateAdapter.DateView
     final class DateViewHolder extends RecyclerView.ViewHolder {
         private final TextView weekday;
         private final TextView day;
+        private final View indicator;
 
         DateViewHolder(View itemView) {
             super(itemView);
             weekday = itemView.findViewById(R.id.weekday);
             day = itemView.findViewById(R.id.day);
+            indicator = itemView.findViewById(R.id.indicator);
         }
 
         void bind(Calendar date) {
@@ -93,11 +95,13 @@ public final class DateAdapter extends RecyclerView.Adapter<DateAdapter.DateView
             day.setText(dayFormat.format(date.getTime()));
 
             boolean isSelected = isSameDay(date, selectedDate);
-            int textColor = isSelected
+            int context = isSelected ? R.color.ink : R.color.ink_faint;
+            int dayColor = isSelected
                 ? ContextCompat.getColor(itemView.getContext(), R.color.accent)
-                : ContextCompat.getColor(itemView.getContext(), R.color.ink_muted);
-            weekday.setTextColor(textColor);
-            day.setTextColor(textColor);
+                : ContextCompat.getColor(itemView.getContext(), R.color.ink_faint);
+            weekday.setTextColor(ContextCompat.getColor(itemView.getContext(), context));
+            day.setTextColor(dayColor);
+            indicator.setVisibility(isSelected ? View.VISIBLE : View.INVISIBLE);
 
             itemView.setOnClickListener(v -> {
                 if (listener != null) listener.onDateSelected(date);

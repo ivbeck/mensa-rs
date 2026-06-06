@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Mensa am Schloss</string>
+    <string name="kicker">STUDIERENDENWERK · KARTE</string>
+    <string name="masthead_line1">MENSA</string>
+    <string name="masthead_line2">AM SCHLOSS</string>
+    <string name="filter_label">FILTER</string>
+    <string name="loading_message">LÄDT …</string>
     <string name="empty_message">Keine Gerichte für dieses Datum.</string>
+    <string name="retry_label">ERNEUT VERSUCHEN</string>
 </resources>

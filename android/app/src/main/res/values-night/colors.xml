@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Editorial dark theme: warm near-black, off-white ink, brighter Swiss red. -->
+    <color name="paper">#100F0C</color>
+    <color name="paper_alt">#1A1815</color>
+    <color name="ink">#F1EDE2</color>
+    <color name="ink_muted">#928C7E</color>
+    <color name="ink_faint">#5A554B</color>
+    <color name="rule_strong">#F1EDE2</color>
+    <color name="rule_hair">#2C2922</color>
+    <color name="accent">#FF4A36</color>
+    <color name="accent_ink">#100F0C</color>
+    <color name="error">#FF6B57</color>
+</resources>

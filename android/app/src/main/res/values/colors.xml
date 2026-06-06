@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg_deep">#0D0D0D</color>
-    <color name="bg_surface">#1A1A1A</color>
-    <color name="bg_elevated">#222222</color>
-    <color name="ink">#FFFFFF</color>
-    <color name="ink_muted">#888888</color>
-    <color name="ink_dim">#555555</color>
-    <color name="accent">#E4A33D</color>
-    <color name="error">#FF6B6B</color>
+    <!-- Editorial light theme: warm newsprint paper, near-black ink, one Swiss red. -->
+    <color name="paper">#F4F1E9</color>
+    <color name="paper_alt">#EAE6DA</color>
+    <color name="ink">#15130F</color>
+    <color name="ink_muted">#6B665B</color>
+    <color name="ink_faint">#A8A294</color>
+    <color name="rule_strong">#15130F</color>
+    <color name="rule_hair">#D6D1C2</color>
+    <color name="accent">#D6321F</color>
+    <color name="accent_ink">#F4F1E9</color>
+    <color name="error">#C0341F</color>
 </resources>

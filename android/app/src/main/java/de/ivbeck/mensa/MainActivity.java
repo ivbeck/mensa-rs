@@ -1,13 +1,12 @@
 package de.ivbeck.mensa;
 
-import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
-import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.TextView;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import org.json.JSONArray;
@@ -21,7 +20,7 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public final class MainActivity extends Activity {
+public final class MainActivity extends AppCompatActivity {
     private static final String LANG = "de";
     private static final String ALLERGENS = "Mi";
     private static final String FAVORITES = "";
@@ -40,9 +39,8 @@ public final class MainActivity extends Activity {
     private DateAdapter dateAdapter;
     private RecyclerView mealList;
     private MealAdapter mealAdapter;
-    private TextView header;
     private TextView subheader;
-    private ImageButton filterButton;
+    private TextView filterButton;
     private boolean hideAllergens;
     private View loadingView;
     private View errorView;
@@ -66,7 +64,6 @@ public final class MainActivity extends Activity {
     }
 
     private void initViews() {
-        header = findViewById(R.id.header);
         subheader = findViewById(R.id.subheader);
         dateStrip = findViewById(R.id.date_strip);
         mealList = findViewById(R.id.meal_list);
@@ -78,10 +75,18 @@ public final class MainActivity extends Activity {
 
         filterButton.setOnClickListener(v -> {
             hideAllergens = !hideAllergens;
-            filterButton.setAlpha(hideAllergens ? 1.0f : 0.5f);
+            updateFilterState();
             loadMenu();
         });
-        filterButton.setAlpha(hideAllergens ? 1.0f : 0.5f);
+        updateFilterState();
+    }
+
+    private void updateFilterState() {
+        int color = hideAllergens ? R.color.accent : R.color.ink_muted;
+        filterButton.setTextColor(ContextCompat.getColor(this, color));
+        filterButton.setPaintFlags(hideAllergens
+            ? filterButton.getPaintFlags() | android.graphics.Paint.UNDERLINE_TEXT_FLAG
+            : filterButton.getPaintFlags() & ~android.graphics.Paint.UNDERLINE_TEXT_FLAG);
     }
 
     private void setupDateStrip() {
@@ -118,7 +123,6 @@ public final class MainActivity extends Activity {
 
     private void loadMenu() {
         String dateString = apiDate.format(selectedDate.getTime());
-        header.setText("Mensa am Schloss");
         subheader.setText(displayDate.format(selectedDate.getTime()));
 
         showLoading();

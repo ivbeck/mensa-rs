@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="@dimen/date_chip_width"
     android:layout_height="@dimen/date_chip_height"
+    android:background="?attr/selectableItemBackgroundBorderless"
     android:gravity="center"
     android:orientation="vertical">
 
@@ -10,15 +12,28 @@
         android:id="@+id/weekday"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="@color/ink_muted"
+        app:fontFamily="@font/spacemono_regular"
+        android:letterSpacing="0.1"
+        android:textAllCaps="true"
+        android:textColor="@color/ink_faint"
         android:textSize="@dimen/text_chip_weekday" />
 
     <TextView
         android:id="@+id/day"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="@color/ink_muted"
-        android:textSize="@dimen/text_chip_date"
-        android:textStyle="bold" />
+        android:layout_marginTop="3dp"
+        app:fontFamily="@font/barlow_bold"
+        android:includeFontPadding="false"
+        android:textColor="@color/ink_faint"
+        android:textSize="@dimen/text_chip_date" />
+
+    <View
+        android:id="@+id/indicator"
+        android:layout_width="@dimen/date_indicator_width"
+        android:layout_height="@dimen/date_indicator_height"
+        android:layout_marginTop="6dp"
+        android:background="@color/accent"
+        android:visibility="invisible" />
 
 </LinearLayout>

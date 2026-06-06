@@ -59,6 +59,7 @@ public final class MealAdapter extends RecyclerView.Adapter<MealAdapter.MealView
     }
 
     final class MealViewHolder extends RecyclerView.ViewHolder {
+        private final TextView index;
         private final TextView title;
         private final TextView priceBadge;
         private final TextView ingredients;
@@ -67,15 +68,18 @@ public final class MealAdapter extends RecyclerView.Adapter<MealAdapter.MealView
         MealViewHolder(View itemView) {
             super(itemView);
             card = itemView.findViewById(R.id.card);
+            index = itemView.findViewById(R.id.index);
             title = itemView.findViewById(R.id.meal_title);
             priceBadge = itemView.findViewById(R.id.price_badge);
             ingredients = itemView.findViewById(R.id.meal_ingredients);
         }
 
         void bind(JSONObject meal) throws JSONException {
+            index.setText(String.format(java.util.Locale.ROOT, "%02d", getBindingAdapterPosition() + 1));
+
             String name = meal.getString("name");
             if (meal.optBoolean("favorite")) {
-                name = "* " + name;
+                name = "★ " + name;
             }
             title.setText(name);
             priceBadge.setText(meal.getString("price"));
